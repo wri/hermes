@@ -20,6 +20,7 @@ import webapp2
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 import model
+import logging
 
 
 _ADMINS = ['asteele@wri.org', 'cdavis@wri.org']
@@ -44,6 +45,7 @@ class AdminHandler(InboundMailHandler):
         if not mail in _ADMINS:
             return
         body = [b.decode() for t, b in message.bodies('text/plain')][0]
+        logging.info('ADMIN: body=%s' % body)
         for line in body.splitlines():
             data = dict(zip(['name', 'mail', 'status', 'role'],
                         [x.strip() for x in line.split(',')]))

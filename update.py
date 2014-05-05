@@ -34,7 +34,8 @@ class UpdateHandler(InboundMailHandler):
             urlsafe = message.to.split('+')[1].split('@')[0]
         subscriber_update = ndb.Key(urlsafe=urlsafe).get()
         body = [b.decode() for t, b in message.bodies('text/plain')][0]
-        subscriber_update.message = body
+        subscriber_update.message = '\n'.join([x for x in body.splitlines()
+                                               if x.strip().startswith('*')])
         subscriber_update.put()
 
 routes = [
