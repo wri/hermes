@@ -25,12 +25,12 @@ class CronHandler(webapp2.RequestHandler):
 
     def send_update(self, subscriber, urlsafe):
         """Sends update reminder email to subscriber."""
-        reply_to = 'update+%s@hermes-hub.appspotmail.com' % urlsafe
+        reply_to = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % urlsafe
         mail.send_mail(
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[GFW] Loop us in...',
+            subject='[Hermes] Loop us in...',
             body="""Just reply to this email and shoot us a few high level bullet points. Basically one-liners starting with "*". For example:\n* Secured 1 billion for GFW over next 3 years\n* Briefed POTUS on national GFW impact over lunch\n* Added 3 centimeter resolution UMD data to website""")
 
     def update(self):
@@ -48,12 +48,12 @@ class CronHandler(webapp2.RequestHandler):
     def send_digest(self, subscriber, digest, date):
         """Sends update reminder email to subscriber."""
         week = "{:%b %d, %Y}".format(date)
-        reply_to = 'noreply@hermes-hub.appspotmail.com'
+        reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
         mail.send_mail(
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[GFW] Looping you in for the week of %s' % week,
+            subject='[Hermes] Looping you in for the week of %s' % week,
             body="""Week of %s\n\n%s""" % (week, digest))
 
     def digest(self):
