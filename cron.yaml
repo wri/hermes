@@ -1,0 +1,9 @@
+cron:
+- description: Send weekly update request email
+  url: /cron/update
+  schedule: every thursday 16:00
+  timezone: America/New_York
+- description: Send weekly update digest email
+  url: /cron/digest
+  schedule: every friday 09:00
+  timezone: America/New_York
