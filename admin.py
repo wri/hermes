@@ -17,9 +17,11 @@
 
 import email
 import webapp2
+from google.appengine.api import mail
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 import model
+import time
 import logging
 
 
@@ -40,6 +42,18 @@ class AdminHandler(InboundMailHandler):
             subscriber.role = data.get('role')
         subscriber.put()
 
+    def send_confirmation(self, to):
+        """Sends confirmation email to with current state of subscriptions."""
+        lines = [u'{name} <{mail}> status={status} role={role}'.format(**x.to_dict())
+                 for x in model.Subscriber.query().iter()]
+        reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
+        mail.send_mail(
+            sender=reply_to,
+            to=to,
+            reply_to=reply_to,
+            subject='[Hermes] Admin confirmation',
+            body="""Your changes were saved:\n\n%s""" % '\n'.join(lines))
+
     def receive(self, message):
         name, mail = email.Utils.parseaddr(message.sender)
         if not mail in _ADMINS:
@@ -50,6 +64,8 @@ class AdminHandler(InboundMailHandler):
             data = dict(zip(['name', 'mail', 'status', 'role'],
                         [x.strip() for x in line.split(',')]))
             self.update(data)
+        time.sleep(5)
+        self.send_confirmation(message.sender)
 
 
 routes = [
