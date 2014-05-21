@@ -25,7 +25,8 @@ import time
 import logging
 
 
-_ADMINS = ['asteele@wri.org', 'cdavis@wri.org']
+_ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'dhammer@wri.org', 
+           'rkraft@gwri.org', 'alyssa.westerman@wri.org']
 
 
 class AdminHandler(InboundMailHandler):
