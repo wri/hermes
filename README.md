@@ -8,7 +8,7 @@ Hermes is also our team snippets clone. But much cooler. Because it's free. And 
 
 # How's this thing work?
 
-Every Thursday at 3p Eastern, Hermes sends out a reminder email to all subscribers. It's just like team snippets. You respond to the email with your bullet points. Then on Friday morning at 9a Eastern, Hermes sends everyone the summary email. Boom.
+Hermes sends out a reminder email to all subscribers on a configurable schedule. It's just like team snippets. You respond to the email with your bullet points. Then on Friday morning at 9a Eastern, Hermes sends everyone the summary email. Boom.
 
 To subscribe people on the team, admins (Aaron and Crystal) subscribe people over email by sending Hermes a request. For example, to subscribe Craig and Nigel, we send this to Hermes via `admin@hermes-hub.appspotmail.com`:
 
