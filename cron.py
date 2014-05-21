@@ -31,7 +31,7 @@ class CronHandler(webapp2.RequestHandler):
             to=subscriber.mail,
             reply_to=reply_to,
             subject='[Hermes] Loop us in...',
-            body="""Just reply to this email and shoot us a few high level bullet points. Basically one-liners starting with "*". For example:\n* Secured 1 billion for GFW over next 3 years\n* Briefed POTUS on national GFW impact over lunch\n* Added 3 centimeter resolution UMD data to website""")
+            body="""Just reply to this email and shoot us a few high level bullet points. Basically one-liners starting with "*". For example:\n\n* Secured 1 billion for GFW over next 3 years\n* Briefed POTUS on national GFW impact over lunch\n* Added 3 centimeter resolution UMD data to website""")
 
     def update(self):
         """Sends update reminder emails to all subscribers."""
