@@ -35,4 +35,4 @@ Nigel Sizer, nsizer@wri.org, subscribe, admin
 
 That's it. Pretty simple. 
 
-Note that App Engine admins can manually invoke the `/cron/update` endpoint to send out update emails. Similarly they can invoke the `/cron/digest` endpoint to trigger the digest email.
+Note that App Engine admins can manually invoke the `/cron/update` endpoint to send out update emails. Similarly they can invoke the `/cron/digest` endpoint to trigger the digest email. You can also hit `/cron/digest?test=true` to get an HTML response message with the digest.
