@@ -35,4 +35,17 @@ Nigel Sizer, nsizer@wri.org, subscribe, admin
 
 That's it. Pretty simple. 
 
-Note that App Engine admins can manually invoke the `/cron/update` endpoint to send out update emails. Similarly they can invoke the `/cron/digest` endpoint to trigger the digest email. You can also hit `/cron/digest?test=true` to get an HTML response message with the digest.
+# Developing
+
+Hermes rides on the Google App Engine Python SDK runtime. After it's installed locally and on your path:
+
+```bash
+$ cd hermes
+$ dev_app_server --clear_datastore=true --show_mail_body=true .
+```
+
+Hermes endpoints will be available at http://localhost:8080 and the admin console will be available at http://localhost:8000. 
+
+You can send update and admin emails using the admin form at http://localhost:8000/mail. For update emails, the reply-to address must match the reply-to address in the update reminder email that gets sent. Watch the dev console for the address.
+
+App Engine admins can manually invoke the `/cron/update` endpoint to send out update emails. Similarly they can invoke the `/cron/digest` endpoint to trigger the digest email. You can also hit `/cron/digest?test=true` to get an HTML response message with the digest.
