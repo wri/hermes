@@ -25,7 +25,7 @@ import time
 import logging
 
 
-_ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'dhammer@wri.org', 
+_ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'dhammer@wri.org',
            'rkraft@gwri.org', 'alyssa.westerman@wri.org']
 
 
@@ -45,7 +45,8 @@ class AdminHandler(InboundMailHandler):
 
     def send_confirmation(self, to):
         """Sends confirmation email to with current state of subscriptions."""
-        lines = [u'{name} <{mail}> status={status} role={role}'.format(**x.to_dict())
+        lines = [u'{name} <{mail}> status={status} role={role}'
+                 .format(**x.to_dict())
                  for x in model.Subscriber.query().iter()]
         reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
         mail.send_mail(

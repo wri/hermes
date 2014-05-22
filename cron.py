@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import datetime
+import logging
 import webapp2
 from google.appengine.api import mail
 import model
@@ -65,11 +66,10 @@ class CronHandler(webapp2.RequestHandler):
                    (x.name, x.message)
                    for x in s_updates]
         digest = ''.join(entries)
-        for subscriber in model.Subscriber.subscribed():
-            if self.request.get('test'):
-                if subscriber.mail == 'asteele@wri.org':
-                    self.send_digest(subscriber, digest, update.date)
-            else:
+        if self.request.get('test'):
+            self.response.out.write(digest)
+        else:
+            for subscriber in model.Subscriber.subscribed():
                 self.send_digest(subscriber, digest, update.date)
 
 routes = [
