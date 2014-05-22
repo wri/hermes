@@ -27,10 +27,10 @@ class TestHermes(unittest.TestCase):
 
     def test_process_update_email(self):
         bodies = {
-            "*line1\n*line2\n*line3": "* line1\r\n* line2\r\n* line3",
-            "*line1\r\n*line2\r\n*line3": "* line1\r\n* line2\r\n* line3",
+            "*line1\n*line2\n*line3": "* line1\n* line2\n* line3",
+            "*line1\r\n*line2\r\n*line3": "* line1\n* line2\n* line3",
             "*line1\r\n": "* line1",
-            "*line1*line2 *line3": "* line1\r\n* line2\r\n* line3"}
+            "*line1*line2 *line3": "* line1\n* line2\n* line3"}
         for body, expected in bodies.iteritems():
             message = update.UpdateHandler.process(body)
             self.assertEqual(message, expected)
