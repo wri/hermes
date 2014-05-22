@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import datetime
+import logging
 import webapp2
 from google.appengine.api import mail
 import model
@@ -23,15 +24,16 @@ import model
 
 class CronHandler(webapp2.RequestHandler):
 
-    def send_update(self, subscriber, urlsafe):
+    def send_update(self, subscriber, urlsafe, now):
         """Sends update reminder email to subscriber."""
+        day = "{:%b %d, %Y}".format(now)
         reply_to = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % urlsafe
         mail.send_mail(
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[Hermes] Loop us in...',
-            body="""Just reply to this email and shoot us a few high level bullet points. Basically one-liners starting with "*". For example:\n\n* Secured 1 billion for GFW over next 3 years\n* Briefed POTUS on national GFW impact over lunch\n* Added 3 centimeter resolution UMD data to website""")
+            subject='[Hermes] Shoot the team your GFW updates for %s' % day,
+            body="Just reply with a few brief bullets starting with all *")
 
     def update(self):
         """Sends update reminder emails to all subscribers."""
@@ -43,28 +45,32 @@ class CronHandler(webapp2.RequestHandler):
                 name=subscriber.name, email=subscriber.mail, date=now)
             subscriber_update.put()
             urlsafe = subscriber_update.key.urlsafe()
-            self.send_update(subscriber, urlsafe)
+            self.send_update(subscriber, urlsafe, now)
 
     def send_digest(self, subscriber, digest, date):
         """Sends update reminder email to subscriber."""
-        week = "{:%b %d, %Y}".format(date)
+        day = "{:%b %d, %Y}".format(date)
         reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
         mail.send_mail(
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[Hermes] Looping you in for the week of %s' % week,
-            body="""Week of %s\n\n%s""" % (week, digest))
+            subject='[Hermes] GFW team updates for %s' % day,
+            body=digest)
 
     def digest(self):
         update = model.Update.latest()
         s_updates = [x for x in
-                     model.SubscriberUpdate.by_date(update.date)]
-        entries = ['%s:\n%s\n\n.....................\n\n' % (x.name, x.message)
+                     model.SubscriberUpdate.by_date(update.date) if x.message]
+        entries = ['%s:\n%s\n\n.....................\n\n' %
+                   (x.name, x.message)
                    for x in s_updates]
         digest = ''.join(entries)
-        for subscriber in model.Subscriber.subscribed():
-            self.send_digest(subscriber, digest, update.date)
+        if self.request.get('test'):
+            self.response.out.write(digest)
+        else:
+            for subscriber in model.Subscriber.subscribed():
+                self.send_digest(subscriber, digest, update.date)
 
 routes = [
     webapp2.Route('/cron/update', handler=CronHandler,

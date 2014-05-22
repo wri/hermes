@@ -15,14 +15,34 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import logging
 import webapp2
+
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
+
 from model import SubscriberUpdate
 
 
 class UpdateHandler(InboundMailHandler):
     """Handler for incoming update emails from subscribers."""
+
+    @classmethod
+    def process(cls, body):
+        """Process body into lines starting with * and return as string."""
+        lines = []
+        tokens = body.splitlines()
+        if len(tokens) == 1:
+            # Hack: Maybe all bullets on same line:
+            tokens = ['* %s' % x for x in body.split('*')]
+        for x in tokens:
+            if not x[1:].strip():
+                continue
+            if x.strip().startswith('*'):
+                x = '* %s' % x[1:].strip()
+                lines.append(x)
+        message = '\n'.join(lines)
+        return message
 
     def receive(self, message):
         """Updates SubscriberUpdate model message using urlsafe key from
@@ -34,8 +54,7 @@ class UpdateHandler(InboundMailHandler):
             urlsafe = message.to.split('+')[1].split('@')[0]
         subscriber_update = ndb.Key(urlsafe=urlsafe).get()
         body = [b.decode() for t, b in message.bodies('text/plain')][0]
-        subscriber_update.message = '\n'.join([x for x in body.splitlines()
-                                               if x.strip().startswith('*')])
+        subscriber_update.message = self.process(body)
         subscriber_update.put()
 
 routes = [
