@@ -32,8 +32,8 @@ class CronHandler(webapp2.RequestHandler):
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[Hermes] Loop us in for %s' % day,
-            body="""Just reply with a few brief bullets starting with *""")
+            subject='[Hermes] Shoot the team your GFW updates for %s' % day,
+            body="Just reply with a few brief bullets starting with all *")
 
     def update(self):
         """Sends update reminder emails to all subscribers."""
@@ -55,8 +55,8 @@ class CronHandler(webapp2.RequestHandler):
             sender=reply_to,
             to=subscriber.mail,
             reply_to=reply_to,
-            subject='[Hermes] Team updates for %s' % day,
-            body="""Team updates for %s\n\n%s""" % (day, digest))
+            subject='[Hermes] GFW team updates for %s' % day,
+            body=digest)
 
     def digest(self):
         update = model.Update.latest()
