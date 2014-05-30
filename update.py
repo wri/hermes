@@ -18,10 +18,12 @@
 """This module processes incoming update emails."""
 
 import webapp2
+import logging
 
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 
+# Unused import required for ndb.Key
 from model import SubscriberUpdate
 
 
@@ -29,8 +31,8 @@ class UpdateHandler(InboundMailHandler):
     """Handler for incoming update emails from subscribers."""
 
     @classmethod
-    def process(cls, body):
-        """Process body into lines starting with * and return as string."""
+    def get_update(cls, body):
+        """Process body to update lines starting with *, return as string."""
         lines = []
         tokens = body.splitlines()
         if len(tokens) == 1:
@@ -45,18 +47,37 @@ class UpdateHandler(InboundMailHandler):
         message = '\n'.join(lines)
         return message
 
+    @classmethod
+    def get_urlsafe(cls, address):
+        """Return urlsafe string from supplied email address.
+
+        Example: 'Hermes <update+ag5kZXZ@hermes-hub.appspotmail.com>' would
+        return ag5kZXZ as the urlsafe string.
+        """
+        if address.find('<') > -1:
+            urlsafe = address.split('<')[1].split('+')[1].split('@')[0]
+        else:
+            urlsafe = address.split('+')[1].split('@')[0]
+        return urlsafe
+
+    @classmethod
+    def process_update(cls, address, body):
+        """Process update from supplied message.to address and body."""
+        urlsafe = cls.get_urlsafe(address)
+        if not urlsafe:
+            logging.error('Unable to extract urlsafe from %s' % address)
+            return
+        subscriber_update = ndb.Key(urlsafe=urlsafe).get()
+        subscriber_update.message = cls.get_update(body)
+        subscriber_update.put()
+        return subscriber_update
+
     def receive(self, message):
         """Updates SubscriberUpdate model message using urlsafe key from
         reply-to address and message contained in the mail body.
         """
-        if message.to.find('<') > -1:
-            urlsafe = message.to.split('<')[1].split('+')[1].split('@')[0]
-        else:
-            urlsafe = message.to.split('+')[1].split('@')[0]
-        subscriber_update = ndb.Key(urlsafe=urlsafe).get()
         body = [b.decode() for t, b in message.bodies('text/plain')][0]
-        subscriber_update.message = self.process(body)
-        subscriber_update.put()
+        self.process_update(message.to, body)
 
 routes = [
     UpdateHandler.mapping(),

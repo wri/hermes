@@ -16,31 +16,63 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.import unittest
 
 import unittest
+import datetime
 
-from google.appengine.ext import db
-from google.appengine.api import memcache
 from google.appengine.ext import testbed
-from google.appengine.api import mail
 
 import admin
 import update
 import model
 
 
-class TestHermes(unittest.TestCase):
+class TestUpdateHandler(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_mail_stub()
+        self.mail_stub = self.testbed.get_stub(testbed.MAIL_SERVICE_NAME)
 
-    def test_process_update_email(self):
+    def test_get_update(self):
         bodies = {
             "*line1\n*line2\n*line3": "* line1\n* line2\n* line3",
             "*line1\r\n*line2\r\n*line3": "* line1\n* line2\n* line3",
             "*line1\r\n": "* line1",
             "*line1*line2 *line3": "* line1\n* line2\n* line3"}
         for body, expected in bodies.iteritems():
-            message = update.UpdateHandler.process(body)
+            message = update.UpdateHandler.get_update(body)
             self.assertEqual(message, expected)
+
+    def test_get_urlsafe(self):
+        f = update.UpdateHandler.get_urlsafe
+        tests = {
+            'Hermes <update+ag5kZXZ@hermes-hub.appspotmail.com>': 'ag5kZXZ',
+            '<update+ag5kZXZ@hermes-hub.appspotmail.com>': 'ag5kZXZ',
+            'update+ag5kZXZ@hermes-hub.appspotmail.com': 'ag5kZXZ',
+        }
+        urlsafe = 'ag5kZXZ'
+        for address, urlsafe in tests.iteritems():
+            self.assertEqual(f(address), urlsafe)
+
+    def test_process_update(self):
+        f = update.UpdateHandler.process_update
+
+        # Create SubscriberUpdate
+        date = datetime.datetime.now()
+        x = model.SubscriberUpdate.get_or_insert(
+            'aaron', 'a@a.com', 'gfw', date)
+        urlsafe = x.key.urlsafe()
+        address = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % urlsafe
+        body = '* did nothing\n* met nobody'
+        f(address, body)
+
+        # Check that the update message made it
+        key_name = '%s+%s+%s' % ('gfw', 'a@a.com', date.isoformat())
+        x = model.SubscriberUpdate.get_by_id(key_name)
+        self.assertIsNotNone(x)
+        self.assertEqual(x.message, body)
 
 
 class TestAdminHandler(unittest.TestCase):
