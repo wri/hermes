@@ -24,44 +24,72 @@ import model
 
 class CronHandler(webapp2.RequestHandler):
 
-    def send_update(self, subscriber, urlsafe, now):
-        """Sends update reminder email to subscriber."""
-        day = "{:%b %d, %Y}".format(now)
-        reply_to = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % urlsafe
-        mail.send_mail(
-            sender=reply_to,
-            to=subscriber.mail,
-            reply_to=reply_to,
-            subject='[Hermes] Shoot the team your GFW updates for %s' % day,
-            body="Just reply with a few brief bullets starting with all *")
+    def send_update(self, team, subscriber, subscriber_update, urlsafe, now):
+        """Sends update reminder email to subscriber.
 
-    def update(self):
+        Updates subscriber_update.sent if mail sent and
+        subscriber_update.error if there's a mail error.
+        """
+        try:
+            mail.check_email_valid(subscriber.mail, 'msg')
+            day = "{:%b %d, %Y}".format(now)
+            reply_to = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % \
+                urlsafe
+            mail.send_mail(
+                sender=reply_to,
+                to=subscriber.mail,
+                reply_to=reply_to,
+                subject='[Hermes] Send %s updates - %s' % (team.upper(), day),
+                body="Just reply with a few brief bullets starting with *")
+            subscriber_update.sent = True
+        except (Exception, mail.InvalidEmailError, mail.Error), e:
+            subscriber_update.error = e.message
+            logging.exception(e)
+
+    def update(self, team):
         """Sends update reminder emails to all subscribers."""
         now = datetime.datetime.now()
-        update = model.Update(id=now.isoformat(), date=now)
+        update = model.Update(id=now.isoformat(), date=now, team=team)
         update.put()
-        for subscriber in model.Subscriber.subscribed():
-            subscriber_update = model.SubscriberUpdate(
-                name=subscriber.name, email=subscriber.mail, date=now)
-            subscriber_update.put()
+        for subscriber in model.Subscriber.subscribed(team):
+            subscriber_update = model.SubscriberUpdate.get_or_insert(
+                name=subscriber.name, mail=subscriber.mail, team=team,
+                date=now)
+            if subscriber_update.sent:
+                # Update email already sent, so nothing to do here!
+                continue
             urlsafe = subscriber_update.key.urlsafe()
-            self.send_update(subscriber, urlsafe, now)
+            self.send_update(team, subscriber, subscriber_update, urlsafe, now)
+            subscriber_update.put()
 
-    def send_digest(self, subscriber, digest, date):
+    def send_digest(self, team, subscriber, digest, date):
         """Sends update reminder email to subscriber."""
-        day = "{:%b %d, %Y}".format(date)
-        reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
-        mail.send_mail(
-            sender=reply_to,
-            to=subscriber.mail,
-            reply_to=reply_to,
-            subject='[Hermes] GFW team updates for %s' % day,
-            body=digest)
+        try:
+            mail.check_email_valid(subscriber.mail, 'msg')
+            sub_digest = model.SubscriberDigest.get_or_insert(
+                mail=subscriber.mail, team=team, date=date)
+            if sub_digest.sent:
+                # Digest email already sent, so nothing to do here!
+                return
+            day = "{:%b %d, %Y}".format(date)
+            reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
+            mail.send_mail(
+                sender=reply_to,
+                to=subscriber.mail,
+                reply_to=reply_to,
+                subject='[Hermes] %s team updates - %s' % (team.upper(), day),
+                body=digest)
+            sub_digest.sent = True
+        except (Exception, mail.InvalidEmailError, mail.Error), e:
+            sub_digest.error = e.message
+            logging.exception(e)
+        sub_digest.put()
 
-    def digest(self):
-        update = model.Update.latest()
+    def digest(self, team):
+        update = model.Update.latest(team)
         s_updates = [x for x in
-                     model.SubscriberUpdate.by_date(update.date) if x.message]
+                     model.SubscriberUpdate.get_updates(update.date, team)
+                     if x.message]
         entries = ['%s:\n%s\n\n.....................\n\n' %
                    (x.name, x.message)
                    for x in s_updates]
@@ -69,13 +97,13 @@ class CronHandler(webapp2.RequestHandler):
         if self.request.get('test'):
             self.response.out.write(digest)
         else:
-            for subscriber in model.Subscriber.subscribed():
-                self.send_digest(subscriber, digest, update.date)
+            for subscriber in model.Subscriber.subscribed(team):
+                self.send_digest(team, subscriber, digest, update.date)
 
 routes = [
-    webapp2.Route('/cron/update', handler=CronHandler,
+    webapp2.Route('/cron/update/<team:.*>', handler=CronHandler,
                   handler_method='update'),
-    webapp2.Route('/cron/digest', handler=CronHandler,
+    webapp2.Route('/cron/digest/<team:.*>', handler=CronHandler,
                   handler_method='digest'),
 ]
 

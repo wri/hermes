@@ -18,7 +18,6 @@
 import email
 import webapp2
 from google.appengine.api import mail
-from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 import model
 import time
@@ -32,43 +31,62 @@ _ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'dhammer@wri.org',
 class AdminHandler(InboundMailHandler):
     """Handler for subscription requests by admin."""
 
-    def update(self, data):
-        """Updates subscription model for supplied data"""
-        key_id = data['mail'].lower().strip()
-        subscriber = ndb.Key(model.Subscriber, key_id).get()
-        if not subscriber:
-            subscriber = model.Subscriber(id=key_id, **data)
-        else:
-            subscriber.status = data.get('status', 'subscribe')
-            subscriber.role = data.get('role')
+    @classmethod
+    def is_admin(cls, sender):
+        """Return True if sender is an admin, otherwise return False."""
+        name, mail = email.Utils.parseaddr(sender)
+        return mail in _ADMINS
+
+    @classmethod
+    def get_subscriptions(cls, body):
+        """Return generator of subscription dictionaries from body."""
+        for line in body.splitlines():
+            if not line.strip():  # Skip any blank lines in body
+                continue
+            yield dict(zip(['name', 'mail', 'team', 'status', 'role'],
+                       [x.strip() for x in line.split(',')]))
+
+    @classmethod
+    def update_subscription(cls, data):
+        """Updates subscription model with supplied data or creates new one."""
+        subscriber = model.Subscriber.get_or_insert(**data)
+        subscriber.status = data.get('status', 'subscribe')
+        subscriber.role = data.get('role')
         subscriber.put()
 
-    def send_confirmation(self, to):
-        """Sends confirmation email to with current state of subscriptions."""
-        lines = [u'{name} <{mail}> status={status} role={role}'
-                 .format(**x.to_dict())
-                 for x in model.Subscriber.query().iter()]
+    @classmethod
+    def get_subscription_report(cls, subscriptions):
+        """Return text report from sequence of Subscription dictionaries."""
+        return '\n'.join([u'{name} <{mail}> {team} {status} {role}'
+               .format(**x)
+               for x in subscriptions])
+
+    @classmethod
+    def get_subscription_msg(cls, to, report):
+        """Returns EmailMessage for supplied recipient and report."""
         reply_to = 'Hermes <noreply@hermes-hub.appspotmail.com>'
-        mail.send_mail(
+        fields = dict(
             sender=reply_to,
             to=to,
             reply_to=reply_to,
-            subject='[Hermes] Admin confirmation',
-            body="""Your changes were saved:\n\n%s""" % '\n'.join(lines))
+            subject='[Hermes] Admin confirmation - Your changes were saved',
+            body=report)
+        return mail.EmailMessage(**fields)
+
+    @classmethod
+    def process_message(cls, sender, body):
+        if not cls.is_admin(sender):
+            logging.info('Ignoring admin request from non-admin %s' % sender)
+            return
+        map(cls.update_subscription, cls.get_subscriptions(body))
+        report = cls.get_subscription_report(
+            [x.to_dict() for x in model.Subscriber.query().iter()])
+        cls.get_subscription_msg(sender, report).send()
 
     def receive(self, message):
-        name, mail = email.Utils.parseaddr(message.sender)
-        if not mail in _ADMINS:
-            return
+        """Receive mail, create/update subscriptions, mail confirmation."""
         body = [b.decode() for t, b in message.bodies('text/plain')][0]
-        logging.info('ADMIN: body=%s' % body)
-        for line in body.splitlines():
-            data = dict(zip(['name', 'mail', 'status', 'role'],
-                        [x.strip() for x in line.split(',')]))
-            self.update(data)
-        time.sleep(5)
-        self.send_confirmation(message.sender)
-
+        self.process_message(message.sender, body)
 
 routes = [
     AdminHandler.mapping(),
