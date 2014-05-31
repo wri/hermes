@@ -17,8 +17,8 @@
 
 """This module processes incoming update emails."""
 
-import webapp2
 import logging
+import webapp2
 
 from google.appengine.ext import ndb
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler

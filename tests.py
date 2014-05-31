@@ -15,14 +15,45 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.import unittest
 
-import unittest
+"""Unit test covereage for Hermes."""
+
 import datetime
+import unittest
 
 from google.appengine.ext import testbed
 
 import admin
-import update
+import cron
 import model
+import update
+
+
+class TestModel(unittest.TestCase):
+
+    def setUp(self):
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_mail_stub()
+        self.mail_stub = self.testbed.get_stub(testbed.MAIL_SERVICE_NAME)
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def test_Subscriber(self):
+        data = [dict(name='aaron', mail='aaron@aaron.com', team='gfw',
+                     status='subscribe', role='admin'),
+                dict(name='aaron', mail='aaron@aaron.com', team='potico',
+                     status='subscribe', role='admin'),
+                dict(name='noah', mail='noah@noah.com', team='gfw',
+                     status='subscribe')]
+
+        for x in data:
+            model.Subscriber.get_or_insert(**x)
+
+        self.assertEqual(2, len(model.Subscriber.subscribed('gfw')))
+        self.assertEqual(1, len(model.Subscriber.subscribed('potico')))
 
 
 class TestUpdateHandler(unittest.TestCase):
@@ -34,6 +65,9 @@ class TestUpdateHandler(unittest.TestCase):
         self.testbed.init_memcache_stub()
         self.testbed.init_mail_stub()
         self.mail_stub = self.testbed.get_stub(testbed.MAIL_SERVICE_NAME)
+
+    def tearDown(self):
+        self.testbed.deactivate()
 
     def test_get_update(self):
         bodies = {
@@ -73,6 +107,142 @@ class TestUpdateHandler(unittest.TestCase):
         x = model.SubscriberUpdate.get_by_id(key_name)
         self.assertIsNotNone(x)
         self.assertEqual(x.message, body)
+
+
+class TestCronDigestHandler(unittest.TestCase):
+
+    def setUp(self):
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_mail_stub()
+        self.mail_stub = self.testbed.get_stub(testbed.MAIL_SERVICE_NAME)
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def test_get_update(self):
+        f = cron.CronDigestHandler.get_update
+        update = f(model.SubscriberUpdate(
+            name='aaron', mail='a@a.c', message='* dude'))
+        self.assertEqual(update, 'aaron <a@a.c>\n* dude\n\n')
+
+    def test_get_digest_message(self):
+        f = cron.CronDigestHandler.get_digest_message
+        date = datetime.datetime.now()
+        msg = f('gfw', 'digest', date, 'a@a.c')
+        msg.send()
+        messages = self.mail_stub.get_sent_messages(to='a@a.c')
+        self.assertEqual(1, len(messages))
+        message = messages[0]
+        self.assertEqual('a@a.c', message.to)
+        body = [b.decode() for t, b in message.bodies('text/plain')][0]
+        self.assertEqual(body, 'digest')
+
+    def test_get_subscriber_update(self):
+        f = cron.CronDigestHandler.get_subscriber_updates
+        date = datetime.datetime.now()
+        x = model.SubscriberUpdate.get_or_insert(
+            name='aaron', team='gfw', mail='a@a.c', date=date)
+        x.message = '* dude'
+        x.put()
+
+        x = model.SubscriberUpdate.get_or_insert(
+            name='aaron', team='gfw', mail='a@a.c', date=date)
+        updates = f('gfw', date)
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(updates[0].message, '* dude')
+
+    def test_process_digest(self):
+        f = cron.CronDigestHandler.process_digest
+        model.Subscriber.get_or_insert(
+            name='aaron', team='gfw', mail='a@a.c', status='subscribe')
+        date = datetime.datetime.now()
+        model.Update.get_or_insert('gfw', date)
+        f('gfw')
+        key_name = '%s+%s+%s' % ('gfw', 'a@a.c', date.isoformat())
+        sd = model.SubscriberDigest.get_by_id(key_name)
+        self.assertIsNotNone(sd)
+        self.assertTrue(sd.sent)
+
+
+class TestCronUpdateHandler(unittest.TestCase):
+
+    def setUp(self):
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
+        self.testbed.init_datastore_v3_stub()
+        self.testbed.init_memcache_stub()
+        self.testbed.init_mail_stub()
+        self.mail_stub = self.testbed.get_stub(testbed.MAIL_SERVICE_NAME)
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+    def test_get_reply_address(self):
+        f = cron.CronUpdateHandler.get_reply_address
+        urlsafe = 'foo'
+        expected = 'Hermes <update+%s@hermes-hub.appspotmail.com>' % urlsafe
+        self.assertEqual(expected, f(urlsafe))
+
+    def test_get_update_message(self):
+        f = cron.CronUpdateHandler.get_update_message
+        team = 'gfw'
+        to = 'asteele@wri.org'
+        sender = 'update+foo@hermes-hub.appspotmail.com'
+        date = datetime.datetime.now()
+        msg = f(team, to, sender, date)
+        msg.send()
+        messages = self.mail_stub.get_sent_messages(to='asteele@wri.org')
+        self.assertEqual(1, len(messages))
+        message = messages[0]
+        self.assertEqual('asteele@wri.org', message.to)
+        self.assertEqual(
+            'update+foo@hermes-hub.appspotmail.com', message.sender)
+        body = [b.decode() for t, b in message.bodies('text/plain')][0]
+        self.assertIsNot(body, '')
+
+    def test_process_subscriber_update(self):
+        f = cron.CronUpdateHandler.process_subscriber_update
+        data = dict(name='aaron', mail='a@a.c', team='gfw',
+                    status='subscribe', role='admin')
+        sub = model.Subscriber.get_or_insert(**data)
+        date = datetime.datetime.now()
+
+        f(date, sub)
+
+        key_name = '%s+%s+%s' % ('gfw', 'a@a.c', date.isoformat())
+        subup = model.SubscriberUpdate.get_by_id(key_name)
+        self.assertTrue(subup.sent)
+
+        messages = self.mail_stub.get_sent_messages(to='a@a.c')
+        self.assertEqual(1, len(messages))
+        message = messages[0]
+        self.assertEqual('a@a.c', message.to)
+        expect = "Just reply with a few brief bullets starting with *"
+        body = [b.decode() for t, b in message.bodies('text/plain')][0]
+        self.assertEqual(expect, body)
+
+    def test_process_update(self):
+        f = cron.CronUpdateHandler.process_update
+        data = [dict(name='aaron', mail='aaron@aaron.com', team='gfw',
+                     status='subscribe', role='admin'),
+                dict(name='aaron', mail='aaron@aaron.com', team='potico',
+                     status='subscribe', role='admin'),
+                dict(name='noah', mail='noah@noah.com', team='gfw',
+                     status='subscribe')]
+        date = datetime.datetime.now()
+        for x in data:
+            model.Subscriber.get_or_insert(**x)
+
+        f('gfw', date)
+        subups = model.SubscriberUpdate.get_updates(date, 'gfw')
+        self.assertEqual(len(subups), 2)
+
+        f('potico', date)
+        subups = model.SubscriberUpdate.get_updates(date, 'potico')
+        self.assertEqual(len(subups), 1)
 
 
 class TestAdminHandler(unittest.TestCase):
@@ -181,4 +351,6 @@ noah <noah@noah.com> gfw subscribe None"""
 if __name__ == '__main__':
     reload(update)
     reload(admin)
+    reload(cron)
+    reload(model)
     unittest.main(exit=False)

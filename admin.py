@@ -15,13 +15,16 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+"""Module that supports admin emails for subscriptions."""
+
 import email
+import logging
 import webapp2
+
 from google.appengine.api import mail
 from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
+
 import model
-import time
-import logging
 
 
 _ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'dhammer@wri.org',
@@ -75,6 +78,7 @@ class AdminHandler(InboundMailHandler):
 
     @classmethod
     def process_message(cls, sender, body):
+        """Process subscription lines in body and send report to sender."""
         if not cls.is_admin(sender):
             logging.info('Ignoring admin request from non-admin %s' % sender)
             return

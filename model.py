@@ -21,9 +21,9 @@ from google.appengine.ext import ndb
 
 
 class Subscriber(ndb.Model):
-    """Represents a single person subscribed to Hermes.
+    """Represents a single person subscribed to a team.
 
-    The keyname is the email+team.
+    The keyname is the mail+team.
     """
     name = ndb.StringProperty()
     mail = ndb.StringProperty()
@@ -48,7 +48,7 @@ class Subscriber(ndb.Model):
 class SubscriberUpdate(ndb.Model):
     """Represents a subscriber update and used to create a digest email.
 
-    The keyname is email+date+team"""
+    The keyname is mail+date+team"""
     name = ndb.StringProperty()  # Subsriber name
     mail = ndb.StringProperty()  # Subscriber mail
     team = ndb.StringProperty()  # The WRI team name
@@ -65,20 +65,27 @@ class SubscriberUpdate(ndb.Model):
 
     @classmethod
     def get_updates(cls, date, team):
-        """Return sequence of models for supplied date and team."""
+        """Get SubscriberUpdate modesl for supplied date and team."""
         return cls.query(cls.date==date, cls.team==team.lower()). \
             order(-cls.name).fetch(100)
 
 
 class Update(ndb.Model):
-    """Represents all Message objects for a given date."""
+    """Represents an update event for a team and date."""
     date = ndb.DateTimeProperty()
     digest_sent = ndb.BooleanProperty(default=False)
+    updates_sent = ndb.BooleanProperty(default=False)
     team = ndb.StringProperty()  # The WRI team name
 
     @classmethod
+    def get_or_insert(cls, team, date):
+        key_name = '%s+%s' % (team, date.isoformat())
+        return super(Update, cls).get_or_insert(
+            key_name, team=team, date=date)
+
+    @classmethod
     def latest(cls, team):
-        """Returns the latest Update entity."""
+        """Returns the latest Update entity for a team."""
         return cls.query(cls.team==team.lower()).order(-cls.date). \
             get()
 
