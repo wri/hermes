@@ -1,9 +1,9 @@
 cron:
-- description: Send weekly update request emails every mon,wed,fri
-  url: /cron/update
-  schedule: every mon,wed,fri 16:00
-  timezone: America/New_York
-- description: Send weekly update digest emails on tue/thu
-  url: /cron/digest
-  schedule: every mon,tue,thu 06:00
-  timezone: America/New_York
+# - description: Sends GFW team updates request email to all subscribers
+#   url: /cron/update/gfw
+#   schedule: every mon,wed,fri 16:00
+#   timezone: America/New_York
+# - description: Sends GFW team updates digest email to all subscribers
+#   url: /cron/digest/gfw
+#   schedule: every mon,tue,thu 06:00
+#   timezone: America/New_York
