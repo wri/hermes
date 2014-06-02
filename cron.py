@@ -21,6 +21,7 @@ reminder emails and digest emails.
 
 import datetime
 import functools
+import logging
 import webapp2
 
 from google.appengine.api import mail
@@ -102,10 +103,16 @@ class CronDigestHandler(webapp2.RequestHandler):
     @classmethod
     def process_digest(cls, team, test=None):
         update = model.Update.latest(team)
+        if not update:
+            logging.info('No Update to process for digest')
+            return
         digest = ''.join(
             map(cls.get_update, cls.get_subscriber_updates(team, update.date)))
         if test:
             return digest
+        if not digest:
+            logging.info('No subscriber updates to process for digest')
+            return
         for subscriber in model.Subscriber.subscribed(team):
             subscriber_digest = model.SubscriberDigest.get_or_insert(
                 mail=subscriber.mail, team=team, date=update.date)
@@ -115,6 +122,7 @@ class CronDigestHandler(webapp2.RequestHandler):
                 message.send()
                 subscriber_digest.sent = True
                 subscriber_digest.put()
+        return digest
 
     def digest(self, team):
         test = self.request.get('test')

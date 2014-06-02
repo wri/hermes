@@ -156,15 +156,39 @@ class TestCronDigestHandler(unittest.TestCase):
 
     def test_process_digest(self):
         f = cron.CronDigestHandler.process_digest
-        model.Subscriber.get_or_insert(
-            name='aaron', team='gfw', mail='a@a.c', status='subscribe')
+
+        # Test no latest update
+        f('gfw')
+        self.assertIsNone(model.SubscriberDigest.query().get())
+        self.assertEqual([], self.mail_stub.get_sent_messages(to='a@a.c'))
+
+        # Test has update but no subscribers
         date = datetime.datetime.now()
         model.Update.get_or_insert('gfw', date)
         f('gfw')
+        self.assertIsNone(model.SubscriberDigest.query().get())
+        self.assertEqual([], self.mail_stub.get_sent_messages(to='a@a.c'))
+
+        # Test has update and subscriber but no digest
+        model.Subscriber.get_or_insert(
+            name='aaron', team='gfw', mail='a@a.c', status='subscribe')
+        digest = f('gfw', test=True)
+        self.assertIsNone(model.SubscriberDigest.query().get())
+        self.assertIs(digest, '')
+        self.assertEqual([], self.mail_stub.get_sent_messages(to='a@a.c'))
+
+        # Test has update and subscriber and digest
+        x = model.SubscriberUpdate.get_or_insert(
+            name='aaron', team='gfw', mail='a@a.c', date=date)
+        x.message = '* dude'
+        x.put()
+        digest = f('gfw')
         key_name = '%s+%s+%s' % ('gfw', 'a@a.c', date.isoformat())
         sd = model.SubscriberDigest.get_by_id(key_name)
         self.assertIsNotNone(sd)
         self.assertTrue(sd.sent)
+        self.assertEqual(digest, 'aaron <a@a.c>\n* dude\n\n')
+        self.assertNotEqual([], self.mail_stub.get_sent_messages(to='a@a.c'))
 
 
 class TestCronUpdateHandler(unittest.TestCase):
