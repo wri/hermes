@@ -98,7 +98,9 @@ class CronDigestHandler(webapp2.RequestHandler):
     @classmethod
     def get_update(cls, x):
         """Return formatted update string for supplied SubscriberUpdate x."""
-        return '{name} <{mail}>\n{message}\n\n'.format(**x.to_dict())
+        update = x.to_dict()
+        update['message'] = update['message'].encode('utf8')
+        return '{name} <{mail}>\n{message}\n\n'.format(**update)
 
     @classmethod
     def process_digest(cls, team, test=None):
