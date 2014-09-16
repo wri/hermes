@@ -12,9 +12,9 @@ cron:
 # POTICO team
 - description: Send POTICO team update request email to all subscribers
   url: /cron/update/potico
-  schedule: every mon,tue,wed,thu,fri 16:00
+  schedule: every mon,tue,wed,thu,fri 05:00
   timezone: America/New_York
 - description: Send POTICO team update digest email to all subscribers
   url: /cron/digest/potico
-  schedule: every mon,tue,wed,thu,fri 06:00
+  schedule: every mon,tue,wed,thu,fri 17:00
   timezone: America/New_York
