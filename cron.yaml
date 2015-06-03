@@ -22,11 +22,11 @@ cron:
 # GFW Africa team
 - description: Sends GFW Africa team updates request email to all subscribers
   url: /cron/update/africa
-  schedule: every mon,wed,fri 16:00
+  schedule: every mon,wed,fri 10:00
   timezone: America/New_York
 - description: Sends GFW Africa team updates digest email to all subscribers
   url: /cron/digest/africa
-  schedule: every mon,tue,thu 06:00
+  schedule: every mon,tue,thu 00:00
   timezone: America/New_York
 
 # POTICO team
