@@ -9,6 +9,16 @@ cron:
   schedule: every mon,tue,thu 06:00
   timezone: America/New_York
 
+  # GFWC team
+- description: Sends GFW-C team updates request email to all subscribers
+  url: /cron/update/gfwc
+  schedule: every thu 16:00
+  timezone: America/New_York
+- description: Sends GFW-C team updates digest email to all subscribers
+  url: /cron/digest/gfwc
+  schedule: every fri 06:00
+  timezone: America/New_York
+
 # WRW skunkworks
 - description: Sends WRW team updates request email to all subscribers
   url: /cron/update/wrw
