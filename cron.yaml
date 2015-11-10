@@ -29,16 +29,6 @@ cron:
   schedule: every fri 06:00
   timezone: America/New_York
 
-# WRW skunkworks
-- description: Sends WRW team updates request email to all subscribers
-  url: /cron/update/wrw
-  schedule: every tue,fri 16:00
-  timezone: America/New_York
-- description: Sends GFW team updates digest email to all subscribers
-  url: /cron/digest/wrw
-  schedule: every mon,wed 06:00
-  timezone: America/New_York
-
 # FLA team
 - description: Sends FLA team updates request email to all subscribers
   url: /cron/update/fla
