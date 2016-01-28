@@ -27,7 +27,7 @@ from google.appengine.ext.webapp.mail_handlers import InboundMailHandler
 import model
 
 
-_ADMINS = ['asteele@wri.org', 'cdavis@wri.org', 'ABarrett@wri.org',
+_ADMINS = ['bguzder-williams@wri.org', 'cdavis@wri.org', 'ABarrett@wri.org',
            'tmaschler@wri.org']
 
 
