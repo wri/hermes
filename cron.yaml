@@ -36,7 +36,7 @@ cron:
   timezone: America/New_York
 - description: Sends FLA team updates digest email to all subscribers
   url: /cron/digest/fla
-  schedule: every mon,tue,thu 06:00
+  schedule: every wed,fri 06:00
   timezone: America/New_York
 
 # GFW Africa team
