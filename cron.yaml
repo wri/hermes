@@ -58,3 +58,14 @@ cron:
   url: /cron/digest/potico
   schedule: every mon,tue,wed,thu,fri 17:00
   timezone: America/New_York
+
+# WATER team
+- description: Sends WATER team updates request email to all subscribers
+  url: /cron/update/water
+  schedule: every tue 16:00
+  timezone: America/New_York
+- description: Sends WATER team updates digest email to all subscribers
+  url: /cron/digest/water
+  schedule: every thu 06:00
+  timezone: America/New_York
+
