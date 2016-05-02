@@ -13,15 +13,15 @@ Hermes sends out a reminder email to all subscribers on a configurable schedule.
 To subscribe people on the team, admins (Aaron, Alyssa, Crystal, Dan, Robin) subscribe people over email by sending Hermes a request. For example, to subscribe Craig and Nigel, we send this to Hermes via `admin@hermes-hub.appspotmail.com`:
 
 ```
-Craig Hansen, chansen@wri.org, subscribe
-Nigel Sizer, nsizer@wri.org, subscribe
+Craig Hansen, chansen@wri.org, team, subscribe
+Nigel Sizer, nsizer@wri.org, team, subscribe
 ```
 
 Oops. Nigel needs to be an admin and Craig wants to unsubscribe. No problem:
 
 ```
-Craig Hansen, chansen@wri.org, unsubscribe
-Nigel Sizer, nsizer@wri.org, subscribe, admin
+Craig Hansen, chansen@wri.org, team, unsubscribe
+Nigel Sizer, nsizer@wri.org, team, subscribe, admin
 ```
 
 Hermes sends back a confirmation email each time with a summary of subscriptions:
