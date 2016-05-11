@@ -28,7 +28,7 @@ import model
 
 
 _ADMINS = ['bguzder-williams@wri.org', 'cdavis@wri.org', 'ABarrett@wri.org',
-           'tmaschler@wri.org']
+           'tmaschler@wri.org','jmessinger@wri.org']
 
 
 class AdminHandler(InboundMailHandler):
