@@ -32,11 +32,11 @@ cron:
 # FLA team
 - description: Sends FLA team updates request email to all subscribers
   url: /cron/update/fla
-  schedule: every wed,fri 16:00
+  schedule: every wed 08:00
   timezone: America/New_York
 - description: Sends FLA team updates digest email to all subscribers
   url: /cron/digest/fla
-  schedule: every mon,thu 06:00
+  schedule: every thu 15:00
   timezone: America/New_York
 
 # GFW Africa team
