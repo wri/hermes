@@ -29,6 +29,18 @@ cron:
 #   schedule: every fri 06:00
 #   timezone: America/New_York
 
+
+# C4F team
+- description: Sends C4F team updates request email to all subscribers
+  url: /cron/update/c4f
+  schedule: every mon 10:00
+  timezone: America/New_York
+- description: Sends C4F team updates digest email to all subscribers
+  url: /cron/digest/c4f
+  schedule: every tue 13:00
+  timezone: America/New_York
+
+
 # FLA team
 - description: Sends FLA team updates request email to all subscribers
   url: /cron/update/fla
